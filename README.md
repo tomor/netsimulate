@@ -56,3 +56,7 @@ tcp.port in {8443, 8080}
 - Add TLS simulations to the config
 - Test with DELETE, HEAD requests
 
+# More simulations ideas
+- Show limit of TCP connections when MaxConnsPerHost is set
+ 
+
