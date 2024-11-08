@@ -30,6 +30,9 @@ tcp.port in {8443, 8080}
     - An opened TCP connection is not reused when HTTP request is not done before IdleConnTimeout on the client or
       server side
     - Simulation 02, Simulation 03
+      - We can see 3 TCP handshakes (SYN, SYN, ACK) for 3 HTTP connections
+      ![Alt text](./img/02-three_tcp_cons.png)
+      
 
 3. TCP connection not put to the idle pool on the client
     - If the HTTP request fails on the TCP level, the TCP connection is not put to the idle pool on the client (timeout,
