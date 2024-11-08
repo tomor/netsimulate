@@ -276,17 +276,18 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 func displayHelp() {
 	fmt.Println("Usage: go run main.go [OPTIONS]")
 	fmt.Println("\nOptions:")
-	fmt.Println("  -simulation ID      Simulation scenario ID (e.g., '01', '10')")
-	fmt.Println("  -https              Enable HTTPS for the server and client")
-	fmt.Println("  -h                  Show this help message and exit")
+	fmt.Println("  -sim        Simulation scenario ID (e.g., '01', '10')")
+	fmt.Println("  -https      Run the selected simulation with HTTPS server (not supported by all scenarios)")
+	fmt.Println("  -h          Show this help message and exit")
 	fmt.Println("\nAvailable Scenarios:")
 
-	for id, cfg := range simulations {
-		fmt.Printf("  %s: %s\n", id, cfg.Description)
+	for _, cfg := range simulations {
+		fmt.Printf("  %s: %s\n", cfg.ID, cfg.Description)
 	}
 
 	fmt.Println("\nExample:")
-	fmt.Println("  go run main.go -sim 01 -https")
+	fmt.Println("  go run main.go -sim 01")
+	fmt.Println("")
 }
 
 // runSimulation sets up and executes the simulation by starting the server and client.

@@ -6,7 +6,8 @@ such as connection handling, timeouts, and response delays.
 
 # How to use
 
-Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
+1. Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
+2. `go run main.go -h`
 
 ## tcpdump
 
