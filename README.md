@@ -23,6 +23,8 @@ tcp.port in {8443, 8080}
     - When a HTTP request is done within ConnectionIdleTimeout on both Server and Client, then a TCP connection is
       reused
     - Simulation 01
+      - We can verify that there is one TCP handshake (SYN, SYN, ACK) for 3 HTTP requests.
+      ![Alt text](./img/01-one_tcp_con.png)
 
 2. Each HTTP request uses own TCP connection
     - An opened TCP connection is not reused when HTTP request is not done before IdleConnTimeout on the client or
