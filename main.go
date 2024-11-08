@@ -335,7 +335,7 @@ func runSimulation(cfg *Config) {
 		fmt.Printf("\nprogram: all tasks completed successfully. Exiting...\n")
 	}
 
-	fmt.Println("Program stopped.")
+	fmt.Println("Simulation stopped.")
 }
 
 func startServer(cfg *Config) {

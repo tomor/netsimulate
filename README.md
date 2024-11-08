@@ -9,13 +9,64 @@ such as connection handling, timeouts, and response delays.
 1. Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
 2. `go run main.go -h`
 
-## tcpdump
+## Example output
 
+```shell
+> go run main.go -sim 01
+Configuration:
+  ID:                           01
+  Description:                  Server HTTP 200 OK response - connection reused from idle pool
+  Server Address:               127.0.0.1:8080
+  Use HTTPS:                    false
+  Client Request Type:          GET
+  Server Idle Timeout:          5 sec
+  Client Idle Timeout:          90 sec
+  Client Wait Before Next Req:  1 sec
+  Server Success On First:      0 sec
+  Server Sleep Before Response: 0 sec
+  Server Sleep On Second:       false
+  Server Sleep On Second Dur:   0 sec
+  Client Timeout:               10 sec
+  Request Count:                3
+
+Starting server on 127.0.0.1:8080
+
+client: Sending 1. GET request...
+client trace: Trying to get a connection for 127.0.0.1:8080
+client trace: Dialing new connection to tcp:127.0.0.1:8080
+client trace: Successfully connected to tcp:127.0.0.1:8080
+client trace: Got a connection: reused=false, wasIdle=false, idleTime=0s
+server: handling request GET num 1
+client trace: Connection returned to idle pool
+client: Response from 1. request: status: 200 OK, body: GET request handled with query number: 1
+client: waiting 1 sec before sending the next request.
+
+client: Sending 2. GET request...
+client trace: Trying to get a connection for 127.0.0.1:8080
+client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.001568542s
+server: handling request GET num 2
+client trace: Connection returned to idle pool
+client: Response from 2. request: status: 200 OK, body: GET request handled with query number: 2
+client: waiting 1 sec before sending the next request.
+
+client: Sending 3. GET request...
+client trace: Trying to get a connection for 127.0.0.1:8080
+client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.001512042s
+server: handling request GET num 3
+client trace: Connection returned to idle pool
+client: Response from 3. request: status: 200 OK, body: GET request handled with query number: 3
+
+program: all tasks completed successfully. Exiting...
+Simulation stopped.
+```
+
+## tcpdump
+```shell
 sudo tcpdump -n -i lo0 tcp port 8080 or tcp port 8443
+```
 
 ### Wireshark
-
-tcp.port in {8443, 8080}
+Display filter: `tcp.port in {8443, 8080}`
 
 # Observation
 
