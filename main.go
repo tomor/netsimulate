@@ -258,6 +258,10 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 		displayHelp()
 		os.Exit(1)
 	}
+	if cfg.ServerType != ServerTypeHTTP && argsCfg.UseHTTPS {
+		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", simulationID)
+		os.Exit(1)
+	}
 	cfg.UseHTTPS = argsCfg.UseHTTPS
 
 	// Set URLs based on HTTPS mode
@@ -276,18 +280,25 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 func displayHelp() {
 	fmt.Println("Usage: go run main.go [OPTIONS]")
 	fmt.Println("\nOptions:")
-	fmt.Println("  -sim        Simulation scenario ID (e.g., '01', '10')")
+	fmt.Println("  -sim        Simulation scenario ID (e.g., '01')")
 	fmt.Println("  -https      Run the selected simulation with HTTPS server (not supported by all scenarios)")
 	fmt.Println("  -h          Show this help message and exit")
 	fmt.Println("\nAvailable Scenarios:")
 
 	for _, cfg := range simulations {
-		fmt.Printf("  %s: %s\n", cfg.ID, cfg.Description)
+		fmt.Printf("  %s: %s %s\n", cfg.ID, cfg.Description, httpsInfo(&cfg))
 	}
 
 	fmt.Println("\nExample:")
 	fmt.Println("  go run main.go -sim 01")
 	fmt.Println("")
+}
+
+func httpsInfo(cfg *Config) string {
+	if cfg.ServerType == ServerTypeHTTP {
+		return "(can HTTPS)"
+	}
+	return "(no HTTPS)"
 }
 
 // runSimulation sets up and executes the simulation by starting the server and client.
