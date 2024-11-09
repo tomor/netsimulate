@@ -285,7 +285,7 @@ func displayHelp() {
 	fmt.Println("  -sim        Simulation scenario ID (e.g., '01')")
 	fmt.Println("  -https      Run the selected simulation with HTTPS server (not supported by all scenarios)")
 	fmt.Println("  -method     Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
-	fmt.Println("  -h          Show this help message and exit")
+	fmt.Println("  -h          Show help and exit")
 	fmt.Println("\nAvailable Scenarios:")
 
 	for _, cfg := range simulations {

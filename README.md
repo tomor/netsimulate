@@ -7,10 +7,13 @@ such as connection handling, timeouts, and response delays.
 # How to use
 
 1. Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
-2. `go run main.go -h`
+2. `go run main.go -sim <number>`
+3. Observe the output in the console and from `tcpdump` / `wireshark`
+
+Run `go run main.go -h` for list of existing simulations.
 
 Simulations which use HTTP server can be started also with TLS (`-https` option). Help (`-h`) shows which are those.
-We can observe that there is no difference in how the tcp connections are reused when TLS is used. The only difference 
+Spoiler: There is no difference in how the tcp connections are reused when TLS is used. The only difference 
 which visible in `tcpdump` and `wirshark` is the TLS handshake and the encrypted communication.
  
 ### tcpdump
