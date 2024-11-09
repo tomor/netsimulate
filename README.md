@@ -75,14 +75,14 @@ Display filter: `tcp.port in {8443, 8080}`
       reused
     - Simulation 01
       - We can verify that there is one TCP handshake (SYN, SYN, ACK) for 3 HTTP requests.
-      ![Alt text](./img/01-one_tcp_con.png)
+      ![Wireshark - simulation 01 - one tcp connection](./img/01-one_tcp_con.png)
 
 2. Each HTTP request uses own TCP connection
     - An opened TCP connection is not reused when HTTP request is not done before IdleConnTimeout on the client or
       server side
     - Simulation 02, Simulation 03
       - We can see 3 TCP handshakes (SYN, SYN, ACK) for 3 HTTP connections
-      ![Alt text](./img/02-three_tcp_cons.png)
+      ![Wireshark - simulation 02 - multiple tcp connections](./img/02-three_tcp_cons.png)
       
 
 3. TCP connection not put to the idle pool on the client
