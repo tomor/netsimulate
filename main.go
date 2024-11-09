@@ -65,7 +65,7 @@ func (c Config) print() {
 	fmt.Printf("  Client Request Type:          %s\n", c.ClientRequestMethod)
 	fmt.Printf("  Server Idle Timeout:          %d sec\n", int(c.ServerIdleTimeout.Seconds()))
 	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
-	fmt.Printf("  Client MaxConnsPerHost:       %d\n", c.ClientMaxConnsPerHost)
+	fmt.Printf("  Client MaxConnsPerHost:       %d %s\n", c.ClientMaxConnsPerHost, infoMaxConns(c.ClientMaxConnsPerHost))
 	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
 	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Printf("  Server Success On First:      %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
@@ -75,6 +75,13 @@ func (c Config) print() {
 	fmt.Printf("  Client Timeout:               %d sec\n", int(c.ClientTimeout.Seconds()))
 	fmt.Printf("  Request Count:                %d\n", c.ReqCount)
 	fmt.Println()
+}
+
+func infoMaxConns(num int) string {
+	if num == 0 {
+		return "(unlimited)"
+	}
+	return ""
 }
 
 type Simulations []Config
