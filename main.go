@@ -123,7 +123,7 @@ var simulations = Simulations{
 		ServerIdleTimeout:         5 * time.Second,
 		ClientIdleTimeout:         90 * time.Second,
 		ClientWaitBeforeNextReq:   1 * time.Second,
-		ServerSleepBeforeResponse: 2 * time.Second,
+		ServerSleepBeforeResponse: 1100 * time.Millisecond,
 		ServerSleepOnSecond:       false,
 		ClientTimeout:             1 * time.Second,
 		ReqCount:                  3,
@@ -144,8 +144,8 @@ var simulations = Simulations{
 		ServerType:                  ServerTypeHTTP,
 	},
 	{
-		ID:                           "11",
-		Description:                  "Server HTTP OK response for first request, but RST to a second one - retry by Round Tripper for GET, HEAD",
+		ID:                           "06",
+		Description:                  "Server HTTP OK response for first request, but RST to a second one - retry by Round Tripper for GET",
 		ClientRequestMethod:          http.MethodGet,
 		ServerIdleTimeout:            5 * time.Second,
 		ClientIdleTimeout:            90 * time.Second,
@@ -159,7 +159,22 @@ var simulations = Simulations{
 		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 	},
 	{
-		ID:                           "12",
+		ID:                           "07",
+		Description:                  "Server HTTP OK response for first request, but RST to a second one - no retry by Round Tripper for POST",
+		ClientRequestMethod:          http.MethodPost,
+		ServerIdleTimeout:            5 * time.Second,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      2 * time.Second,
+		ServerSuccessResponseOnFirst: false,
+		ServerSleepBeforeResponse:    0,
+		ServerSleepOnSecond:          false,
+		ClientTimeout:                10 * time.Second,
+		ReqCount:                     3,
+		ServerType:                   ServerTypeMultiResponse,
+		ServerMultiCloseConAfter:     2100 * time.Millisecond,
+	},
+	{
+		ID:                           "08",
 		Description:                  "Server HTTP OK response for first request, then closes the conn with RST before the second is closed - client detects closed connection when trying to use it and opens a new one",
 		ClientRequestMethod:          http.MethodGet,
 		ServerIdleTimeout:            5 * time.Second,
@@ -172,21 +187,6 @@ var simulations = Simulations{
 		ReqCount:                     3,
 		ServerType:                   ServerTypeMultiResponse,
 		ServerMultiCloseConAfter:     1000 * time.Millisecond,
-	},
-	{
-		ID:                           "13",
-		Description:                  "Server HTTP OK response for first request, but RST to a second one - no retry by Round Tripper for POST, DELETE",
-		ClientRequestMethod:          http.MethodPost,
-		ServerIdleTimeout:            5 * time.Second,
-		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      2 * time.Second,
-		ServerSuccessResponseOnFirst: false,
-		ServerSleepBeforeResponse:    0,
-		ServerSleepOnSecond:          false,
-		ClientTimeout:                10 * time.Second,
-		ReqCount:                     3,
-		ServerType:                   ServerTypeMultiResponse,
-		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 	},
 	// Additional scenarios will be added here
 	//  - no response at all on the server...
@@ -221,7 +221,7 @@ func parseArguments() (string, *Config, error) {
 
 	flag.StringVar(&simulationID, "sim", "01", "Simulation scenario ID")
 	flag.BoolVar(&cfg.UseHTTPS, "https", false, "Enable HTTPS")
-	flag.StringVar(&method, "method", "GET", "HTTP request method (GET, POST, DELETE, HEAD)")
+	flag.StringVar(&method, "method", "GET", "Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	flag.Usage = displayHelp
 	flag.Parse()
 
@@ -262,6 +262,9 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", simulationID)
 		os.Exit(1)
 	}
+	if argsCfg.ClientRequestMethod != "" {
+		cfg.ClientRequestMethod = argsCfg.ClientRequestMethod
+	}
 	cfg.UseHTTPS = argsCfg.UseHTTPS
 
 	// Set URLs based on HTTPS mode
@@ -282,6 +285,7 @@ func displayHelp() {
 	fmt.Println("\nOptions:")
 	fmt.Println("  -sim        Simulation scenario ID (e.g., '01')")
 	fmt.Println("  -https      Run the selected simulation with HTTPS server (not supported by all scenarios)")
+	fmt.Println("  -method     Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	fmt.Println("  -h          Show this help message and exit")
 	fmt.Println("\nAvailable Scenarios:")
 

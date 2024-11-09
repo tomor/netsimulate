@@ -9,6 +9,18 @@ such as connection handling, timeouts, and response delays.
 1. Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
 2. `go run main.go -h`
 
+Simulations which use HTTP server can be started also with TLS (`-https` option). Help (`-h`) shows which are those.
+We can observe that there is no difference in how the tcp connections are reused when TLS is used. The only difference 
+which visible in `tcpdump` and `wirshark` is the TLS handshake and the encrypted communication.
+ 
+### tcpdump
+```shell
+sudo tcpdump -n -i lo0 tcp port 8080 or tcp port 8443
+```
+
+### Wireshark
+Display filter: `tcp.port in {8443, 8080}`
+
 ## Example output
 
 ```shell
@@ -60,17 +72,10 @@ program: all tasks completed successfully. Exiting...
 Simulation stopped.
 ```
 
-## tcpdump
-```shell
-sudo tcpdump -n -i lo0 tcp port 8080 or tcp port 8443
-```
-
-### Wireshark
-Display filter: `tcp.port in {8443, 8080}`
 
 # Observation
 
-1. Reuse of TCP connection for multiple HTTP request
+1. Reuse of TCP connection for multiple HTTP requests
     - When a HTTP request is done within ConnectionIdleTimeout on both Server and Client, then a TCP connection is
       reused
     - Simulation 01
@@ -84,33 +89,32 @@ Display filter: `tcp.port in {8443, 8080}`
       - We can see 3 TCP handshakes (SYN, SYN, ACK) for 3 HTTP connections
       ![Wireshark - simulation 02 - multiple tcp connections](./img/02-three_tcp_cons.png)
       
-
 3. TCP connection not put to the idle pool on the client
     - If the HTTP request fails on the TCP level, the TCP connection is not put to the idle pool on the client (timeout,
       RST, ..)
     - Simulation 04, Simulation 05
+      ![Wireshark - simulation 04 - client timeout no idle pool](./img/04-client-timeout-no-idle-pool.png)
 
 4. Retry by TCP layer (RoundTripper)
     - TCP connection is put to the idle pool on the client after a first successful request, after second request, the
-      server closes connection with RST
+      server closes connection with RST instead of returning a HTTP response
     - In this case the clients RoundTripper automatically retries the HTTP request for idempotent methods GET, HEAD,
       OPTIONS, or TRACE;
       or if their [Header] map contains an "Idempotency-Key" or "X-Idempotency-Key" entry.
-    - Simulation 11
-    - If the connection is closed before the seconds request is sent, then the broken connection is detected before
-      sending the HTTP request and a new connection is opened.
-    - Simulation 13
+    - Simulation 06
+      ![Wireshark - simulation 06 - retry by round tripper](./img/06-retry-by-round-tripper.png)
+    - Simulation 07 - no retry for POST request
+      ![Wireshark - simulation 07 - no retry by round tripper](./img/07-no-retry-for-post.png)
 
 5. Client detection of broken connections in the idle pool
     - When a server closes a connection which is in idle pool on the client side, it's detected once the client tries
       to use it
     - The client discards the broken connection and opens a new one (or uses another one form the idle pool)
     - The HTTP request is sent only once over a "ok" connection
-    - Simulation 12
+    - Simulation 08
+      ![Wireshark - simulation 08 - closed connection in idle pool](./img/08-closed-conn-detect-on-client.png)
 
 # TODO
-- Add a images from Wireshark / tcp dump
-- Add TLS simulations to the config
 - Test with DELETE, HEAD requests
 
 # More simulations ideas
