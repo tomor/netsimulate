@@ -46,6 +46,7 @@ type Config struct {
 	ClientWaitBeforeNextReq      time.Duration // Time client waits before next request
 	ReqInParallel                bool          // When true, requests can be done in parallel
 	ClientIdleTimeout            time.Duration // Time for which the TCP connection is kept in the idle pool
+	ClientMaxConnsPerHost        int           // http.Transport.MaxConnsPerHost, default 0
 	ServerSuccessResponseOnFirst bool          // If the server responds with HTTP 200 OK for the first request (bad server only)
 	ServerSleepBeforeResponse    time.Duration // Server sleep duration to simulate delay
 	ServerSleepOnSecond          bool          // Simulate sleep only on second request, for: ServerTypeHTTP
@@ -64,6 +65,7 @@ func (c Config) print() {
 	fmt.Printf("  Client Request Type:          %s\n", c.ClientRequestMethod)
 	fmt.Printf("  Server Idle Timeout:          %d sec\n", int(c.ServerIdleTimeout.Seconds()))
 	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
+	fmt.Printf("  Client MaxConnsPerHost:       %d\n", c.ClientMaxConnsPerHost)
 	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
 	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Printf("  Server Success On First:      %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
@@ -195,6 +197,22 @@ var simulations = Simulations{
 		ClientRequestMethod:          http.MethodGet,
 		ServerIdleTimeout:            5 * time.Second,
 		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      0,
+		ReqInParallel:                true,
+		ServerSuccessResponseOnFirst: false,
+		ServerSleepBeforeResponse:    10 * time.Millisecond,
+		ServerSleepOnSecond:          false,
+		ClientTimeout:                10 * time.Second,
+		ReqCount:                     3,
+		ServerType:                   ServerTypeHTTP,
+	},
+	{
+		ID:                           "10",
+		Description:                  "Multiple requests in parallel with client config MaxConnsPerHost=1 - one TCP connection is used",
+		ClientRequestMethod:          http.MethodGet,
+		ServerIdleTimeout:            5 * time.Second,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientMaxConnsPerHost:        1,
 		ClientWaitBeforeNextReq:      0,
 		ReqInParallel:                true,
 		ServerSuccessResponseOnFirst: false,
@@ -560,6 +578,7 @@ func startClient(cfg *Config) {
 	// Create custom transport with idle timeout settings
 	transport := &http.Transport{
 		IdleConnTimeout: cfg.ClientIdleTimeout,
+		MaxConnsPerHost: cfg.ClientMaxConnsPerHost,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,

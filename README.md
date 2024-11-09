@@ -121,8 +121,10 @@ Simulation stopped.
     - When a client does 3 HTTP requests in parallel, 3 TCP connections are opened at once
     - Simulation 09
       ![Wireshark - simulation 09 - requests in parallel](./img/09-requests-in-parallel.png)
+     
+7. Multiple HTTP requests in parallel done in series via 1 TCP connection
+    - When a client does 3 HTTP requests in parallel while the http.Transport config MaxConnsPerHost is set to 1, they will be serialized over 1 TCP connection.
+    - Simulation 10
+      ![Wireshark - simulation 10 - requests in parallel serialized](./img/10-requests-in-parallel-not-really.png)
 
-# More simulations ideas
-- Show limit of TCP connections when MaxConnsPerHost is set
- 
 
