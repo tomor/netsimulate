@@ -117,6 +117,10 @@ Simulation stopped.
     - Simulation 08
       ![Wireshark - simulation 08 - closed connection in idle pool](./img/08-closed-conn-detect-on-client.png)
 
+6. Multiple HTTP requests in parallel over separate TCP connections
+    - When a client does 3 HTTP requests in parallel, 3 TCP connections are opened at once
+    - Simulation 09
+      ![Wireshark - simulation 09 - requests in parallel](./img/09-requests-in-parallel.png)
 
 # More simulations ideas
 - Show limit of TCP connections when MaxConnsPerHost is set

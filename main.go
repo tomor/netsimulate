@@ -44,6 +44,7 @@ type Config struct {
 	ClientRequestURL             string        // URL to which the client sends the HTTP request
 	ServerIdleTimeout            time.Duration // Server idle timeout
 	ClientWaitBeforeNextReq      time.Duration // Time client waits before next request
+	ReqInParallel                bool          // When true, requests can be done in parallel
 	ClientIdleTimeout            time.Duration // Time for which the TCP connection is kept in the idle pool
 	ServerSuccessResponseOnFirst bool          // If the server responds with HTTP 200 OK for the first request (bad server only)
 	ServerSleepBeforeResponse    time.Duration // Server sleep duration to simulate delay
@@ -64,6 +65,7 @@ func (c Config) print() {
 	fmt.Printf("  Server Idle Timeout:          %d sec\n", int(c.ServerIdleTimeout.Seconds()))
 	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
 	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
+	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Printf("  Server Success On First:      %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
 	fmt.Printf("  Server Sleep Before Response: %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
 	fmt.Printf("  Server Sleep On Second:       %t\n", c.ServerSleepOnSecond)
@@ -187,8 +189,21 @@ var simulations = Simulations{
 		ServerType:                   ServerTypeMultiResponse,
 		ServerMultiCloseConAfter:     1000 * time.Millisecond,
 	},
-	// Additional scenarios will be added here
-	//  - no response at all on the server...
+	{
+		ID:                           "09",
+		Description:                  "Multiple requests in parallel - multiple TCP connections",
+		ClientRequestMethod:          http.MethodGet,
+		ServerIdleTimeout:            5 * time.Second,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      0,
+		ReqInParallel:                true,
+		ServerSuccessResponseOnFirst: false,
+		ServerSleepBeforeResponse:    10 * time.Millisecond,
+		ServerSleepOnSecond:          false,
+		ClientTimeout:                10 * time.Second,
+		ReqCount:                     3,
+		ServerType:                   ServerTypeHTTP,
+	},
 }
 
 func (s Simulations) get(id string) (c *Config, found bool) {
@@ -560,16 +575,33 @@ func startClient(cfg *Config) {
 		Timeout:   cfg.ClientTimeout,
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(cfg.ReqCount)
 	// Perform GET requests
 	for i := 1; i <= cfg.ReqCount; i++ {
-		sendRequest(client, i, *cfg)
+		if cfg.ReqInParallel {
+			go func() {
+				sendRequest(client, i, *cfg)
+				wg.Done()
+			}()
+		} else {
+			sendRequest(client, i, *cfg)
+			wg.Done()
+		}
 		if i < cfg.ReqCount {
 			wait(int(cfg.ClientWaitBeforeNextReq.Seconds()))
 		}
 	}
+	if cfg.ReqInParallel {
+		fmt.Println("client: waiting for all requests to finish")
+	}
+	wg.Wait()
 }
 
 func wait(sec int) {
+	if sec == 0 {
+		return
+	}
 	// Simulate waiting for the server to close the connection (e.g., server idle timeout < 90s)
 	fmt.Printf("client: waiting %d sec before sending the next request", sec)
 	for i := 0; i < sec; i++ {
