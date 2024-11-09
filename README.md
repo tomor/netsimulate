@@ -114,8 +114,6 @@ Simulation stopped.
     - Simulation 08
       ![Wireshark - simulation 08 - closed connection in idle pool](./img/08-closed-conn-detect-on-client.png)
 
-# TODO
-- Test with DELETE, HEAD requests
 
 # More simulations ideas
 - Show limit of TCP connections when MaxConnsPerHost is set
