@@ -30,7 +30,6 @@ type ServerType int
 
 const (
 	ServerTypeHTTP          ServerType = iota
-	ServerTypeAbrupt                   // server type: TCP
 	ServerTypeRST                      // server type: TCP
 	ServerTypeMultiResponse            // server type: TCP - server doesn't close the connection after the first response
 )
@@ -449,9 +448,6 @@ func handleConnection(conn net.Conn, cfg *Config) {
 	case ServerTypeRST:
 		sendRST(conn, cfg)
 		return
-	case ServerTypeAbrupt:
-		sendNothing(conn, cfg)
-		return
 	default:
 		panic("unknown server type")
 	}
@@ -490,10 +486,7 @@ func sendHTTPResponse(conn net.Conn, cfg *Config) {
 func sendMulti(conn net.Conn, cfg *Config) {
 	defer conn.Close()
 
-	// Cheating here: not replying when a HTTP request is received.
-	// Just waiting a bit (expecting that client sends one) and then sending HTTP response.
-	// Expecting that client sends a HTTP request soon after the connection is opened.
-	// TODO improve
+	// Cheating here: not waiting for HTTP request, just assuming it comes and sending HTTP response after 100ms
 	time.Sleep(100 * time.Millisecond)
 
 	// Write HTTP 200 OK response
@@ -546,35 +539,6 @@ func sendRST(conn net.Conn, cfg *Config) {
 	}
 
 	fmt.Println("server: Abruptly closed connection with RST to", conn.RemoteAddr())
-}
-
-// This was a try to not send RST, but as it's sent by the OS, it's not really working...
-// TODO check this scenario later if it can be triggered.
-func sendNothing(conn net.Conn, cfg *Config) {
-	defer conn.Close()
-
-	// as we are not really responding to a real HTTP request, just wait a bit before doing something
-	time.Sleep(10 * time.Millisecond)
-
-	// Get raw file descriptor from the connection
-	tcpConn, ok := conn.(*net.TCPConn)
-	if !ok {
-		fmt.Println("server: Not a TCP connection, closing normally")
-		return
-	}
-
-	// Get the file descriptor from the TCP connection
-	file, err := tcpConn.File()
-	if err != nil {
-		fmt.Println("server: Error getting file descriptor:", err)
-		return
-	}
-	fd := int(file.Fd())
-
-	// Close the file descriptor without calling conn.Close()
-	file.Close() // This might drop the connection without FIN/RST ... -> nope , the system sends RST
-
-	fmt.Printf("server: Closed file descriptor (FD: %d) for %s without calling conn.Close()\n", fd, conn.RemoteAddr())
 }
 
 func startClient(cfg *Config) {
