@@ -24,6 +24,24 @@ sudo tcpdump -n -i lo0 tcp port 8080 or tcp port 8443
 ### Wireshark
 Display filter: `tcp.port in {8443, 8080}`
 
+
+#### Decrypting TLS traffic in Wireshark
+To decrypt TLS traffic and analyze it in Wireshark, follow these steps:
+
+1. **Set the `SSLKEYLOGFILE` Environment Variable**  
+   Define the `SSLKEYLOGFILE` environment variable with the file path where the client TLS secrets will be written. For example:
+
+   ```bash
+   export SSLKEYLOGFILE=/path/to/tls-secrets.log
+   
+2. **Configure Wireshark**  
+    Open Wireshark and go to Wireshark/Edit → Preferences → Protocols → TLS.
+    Set the (Pre)-Master-Secret log filename to the file path used for SSLKEYLOGFILE.
+
+3. **Capture and Analyze**  
+    Start capturing traffic in Wireshark.
+    Enjoy decrypted TLS traffic.
+
 ## Example output
 
 ```shell
@@ -84,6 +102,9 @@ Simulation stopped.
     - Simulation 01
       - We can verify that there is one TCP handshake (SYN, SYN, ACK) for 3 HTTP requests.
       ![Wireshark - simulation 01 - one tcp connection](./img/01-one_tcp_con.png)
+    - Simulation 20
+      - Here we have decrypted TLS traffic with HTTP2
+        ![Wireshark - simulation 20 - one tcp connection](./img/20-http2-one_tcp_con.png)
 
 2. Each HTTP request uses own TCP connection
     - An opened TCP connection is not reused when HTTP request is not done before IdleConnTimeout on the client or
@@ -127,5 +148,4 @@ Simulation stopped.
     - When a client does 3 HTTP requests in parallel while the http.Transport config MaxConnsPerHost is set to 1, they will be serialized over 1 TCP connection.
     - Simulation 10
       ![Wireshark - simulation 10 - requests in parallel serialized](./img/10-requests-in-parallel-not-really.png)
-
 

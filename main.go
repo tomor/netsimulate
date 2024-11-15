@@ -35,25 +35,29 @@ const (
 )
 
 type Config struct {
-	ID                           string // Simulation identifier
-	Description                  string // Description of the scenario
-	ServerAddress                string
-	UseHTTPS                     bool          // Enable HTTPS if true
+	ID          string // Simulation identifier
+	Description string // Description of the scenario
+
+	ServerAddress string
+	UseHTTP2      bool // Supported only by ServerTypeHTTP, enables HTTPS
+	UseTLS        bool // Enable HTTPS
+
 	ServerType                   ServerType    // Type of server simulation (e.g., RST, Abrupt close)
-	ClientRequestMethod          string        // HTTP request type (GET, POST, etc.)
-	ClientRequestURL             string        // URL to which the client sends the HTTP request
 	ServerIdleTimeout            time.Duration // Server idle timeout
-	ClientWaitBeforeNextReq      time.Duration // Time client waits before next request
-	ReqInParallel                bool          // When true, requests can be done in parallel
-	ClientIdleTimeout            time.Duration // Time for which the TCP connection is kept in the idle pool
-	ClientMaxConnsPerHost        int           // http.Transport.MaxConnsPerHost, default 0
 	ServerSuccessResponseOnFirst bool          // If the server responds with HTTP 200 OK for the first request (bad server only)
 	ServerSleepBeforeResponse    time.Duration // Server sleep duration to simulate delay
 	ServerSleepOnSecond          bool          // Simulate sleep only on second request, for: ServerTypeHTTP
 	ServerSleepOnSecondDuration  time.Duration // Duration of sleep on second request
-	ClientTimeout                time.Duration // Client timeout for each request
 	ServerMultiCloseConAfter     time.Duration // Duration after which the connection is closed after the first response for ServerTypeMultiResponse
-	ReqCount                     int           // Number of requests client will make
+
+	ClientRequestMethod     string        // HTTP request type (GET, POST, etc.)
+	ClientRequestURL        string        // URL to which the client sends the HTTP request
+	ClientWaitBeforeNextReq time.Duration // Time client waits before next request
+	ReqInParallel           bool          // When true, requests can be done in parallel
+	ClientIdleTimeout       time.Duration // Time for which the TCP connection is kept in the idle pool
+	ClientMaxConnsPerHost   int           // http.Transport.MaxConnsPerHost, default 0
+	ClientTimeout           time.Duration // Client timeout for each request
+	ReqCount                int           // Number of requests client will make
 }
 
 func (c Config) print() {
@@ -61,19 +65,20 @@ func (c Config) print() {
 	fmt.Printf("  ID:                           %s\n", c.ID)
 	fmt.Printf("  Description:                  %s\n", c.Description)
 	fmt.Printf("  Server Address:               %s\n", c.ServerAddress)
-	fmt.Printf("  Use HTTPS:                    %t\n", c.UseHTTPS)
-	fmt.Printf("  Client Request Type:          %s\n", c.ClientRequestMethod)
+	fmt.Printf("  Use HTTP2:                    %v\n", c.UseHTTP2)
+	fmt.Printf("  Use TLS:                      %t\n", c.UseTLS)
 	fmt.Printf("  Server Idle Timeout:          %d sec\n", int(c.ServerIdleTimeout.Seconds()))
-	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
-	fmt.Printf("  Client MaxConnsPerHost:       %d %s\n", c.ClientMaxConnsPerHost, infoMaxConns(c.ClientMaxConnsPerHost))
-	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
-	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Printf("  Server Success On First:      %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
 	fmt.Printf("  Server Sleep Before Response: %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
 	fmt.Printf("  Server Sleep On Second:       %t\n", c.ServerSleepOnSecond)
 	fmt.Printf("  Server Sleep On Second Dur:   %d sec\n", int(c.ServerSleepOnSecondDuration.Seconds()))
+	fmt.Printf("  Client Request Type:          %s\n", c.ClientRequestMethod)
+	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
+	fmt.Printf("  Client MaxConnsPerHost:       %d %s\n", c.ClientMaxConnsPerHost, infoMaxConns(c.ClientMaxConnsPerHost))
+	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
 	fmt.Printf("  Client Timeout:               %d sec\n", int(c.ClientTimeout.Seconds()))
 	fmt.Printf("  Request Count:                %d\n", c.ReqCount)
+	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Println()
 }
 
@@ -90,144 +95,158 @@ var simulations = Simulations{
 	{
 		ID:                        "01",
 		Description:               "Server HTTP 200 OK response - connection reused from idle pool",
-		ClientRequestMethod:       http.MethodGet,
+		ServerType:                ServerTypeHTTP,
 		ServerIdleTimeout:         5 * time.Second,
-		ClientIdleTimeout:         90 * time.Second,
-		ClientWaitBeforeNextReq:   1 * time.Second,
 		ServerSleepBeforeResponse: 0,
 		ServerSleepOnSecond:       false,
+		ClientRequestMethod:       http.MethodGet,
+		ClientIdleTimeout:         90 * time.Second,
+		ClientWaitBeforeNextReq:   1 * time.Second,
 		ClientTimeout:             10 * time.Second,
 		ReqCount:                  3,
-		ServerType:                ServerTypeHTTP, // Normal server
 	},
 	{
 		ID:                        "02",
 		Description:               "Server HTTP 200 OK response - connection not reused from idle pool - over server idle timeout",
-		ClientRequestMethod:       http.MethodGet,
+		ServerType:                ServerTypeHTTP,
 		ServerIdleTimeout:         1 * time.Second,
-		ClientIdleTimeout:         90 * time.Second,
-		ClientWaitBeforeNextReq:   2 * time.Second,
 		ServerSleepBeforeResponse: 0,
 		ServerSleepOnSecond:       false,
+		ClientRequestMethod:       http.MethodGet,
+		ClientIdleTimeout:         90 * time.Second,
+		ClientWaitBeforeNextReq:   2 * time.Second,
 		ClientTimeout:             10 * time.Second,
 		ReqCount:                  3,
-		ServerType:                ServerTypeHTTP,
 	},
 	{
 		ID:                        "03",
 		Description:               "Server HTTP 200 OK response - connection not reused from idle pool - over client idle timeout",
-		ClientRequestMethod:       http.MethodGet,
+		ServerType:                ServerTypeHTTP,
 		ServerIdleTimeout:         5 * time.Second,
-		ClientIdleTimeout:         1 * time.Second,
-		ClientWaitBeforeNextReq:   2 * time.Second,
 		ServerSleepBeforeResponse: 0,
 		ServerSleepOnSecond:       false,
+		ClientRequestMethod:       http.MethodGet,
+		ClientIdleTimeout:         1 * time.Second,
+		ClientWaitBeforeNextReq:   2 * time.Second,
 		ClientTimeout:             10 * time.Second,
 		ReqCount:                  3,
-		ServerType:                ServerTypeHTTP,
 	},
 	{
 		ID:                        "04",
 		Description:               "Server HTTP 200 OK response - slow response - client timeout - connection not put to idle pool",
-		ClientRequestMethod:       http.MethodGet,
+		ServerType:                ServerTypeHTTP,
 		ServerIdleTimeout:         5 * time.Second,
-		ClientIdleTimeout:         90 * time.Second,
-		ClientWaitBeforeNextReq:   1 * time.Second,
 		ServerSleepBeforeResponse: 1100 * time.Millisecond,
 		ServerSleepOnSecond:       false,
+		ClientRequestMethod:       http.MethodGet,
+		ClientIdleTimeout:         90 * time.Second,
+		ClientWaitBeforeNextReq:   1 * time.Second,
 		ClientTimeout:             1 * time.Second,
 		ReqCount:                  3,
-		ServerType:                ServerTypeHTTP,
 	},
 	{
 		ID:                          "05",
 		Description:                 "Server HTTP 200 OK response - slow response on second request - connection not put to idle pool",
-		ClientRequestMethod:         http.MethodGet,
+		ServerType:                  ServerTypeHTTP,
 		ServerIdleTimeout:           5 * time.Second,
-		ClientIdleTimeout:           90 * time.Second,
-		ClientWaitBeforeNextReq:     1 * time.Second,
 		ServerSleepBeforeResponse:   0 * time.Second,
 		ServerSleepOnSecond:         true,
 		ServerSleepOnSecondDuration: 1100 * time.Millisecond,
+		ClientRequestMethod:         http.MethodGet,
+		ClientIdleTimeout:           90 * time.Second,
+		ClientWaitBeforeNextReq:     1 * time.Second,
 		ClientTimeout:               1 * time.Second,
 		ReqCount:                    3,
-		ServerType:                  ServerTypeHTTP,
 	},
 	{
 		ID:                           "06",
 		Description:                  "Server HTTP OK response for first request, but RST to a second one - retry by Round Tripper for GET",
-		ClientRequestMethod:          http.MethodGet,
+		ServerType:                   ServerTypeMultiResponse,
+		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 		ServerIdleTimeout:            5 * time.Second,
-		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      2 * time.Second,
 		ServerSuccessResponseOnFirst: false,
 		ServerSleepBeforeResponse:    0,
 		ServerSleepOnSecond:          false,
+		ClientRequestMethod:          http.MethodGet,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      2 * time.Second,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
-		ServerType:                   ServerTypeMultiResponse,
-		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 	},
 	{
 		ID:                           "07",
 		Description:                  "Server HTTP OK response for first request, but RST to a second one - no retry by Round Tripper for POST",
-		ClientRequestMethod:          http.MethodPost,
+		ServerType:                   ServerTypeMultiResponse,
+		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 		ServerIdleTimeout:            5 * time.Second,
-		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      2 * time.Second,
 		ServerSuccessResponseOnFirst: false,
 		ServerSleepBeforeResponse:    0,
 		ServerSleepOnSecond:          false,
+		ClientRequestMethod:          http.MethodPost,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      2 * time.Second,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
-		ServerType:                   ServerTypeMultiResponse,
-		ServerMultiCloseConAfter:     2100 * time.Millisecond,
 	},
 	{
 		ID:                           "08",
 		Description:                  "Server HTTP OK response for first request, then closes the conn with RST before the second is closed - client detects closed connection when trying to use it and opens a new one",
-		ClientRequestMethod:          http.MethodGet,
+		ServerType:                   ServerTypeMultiResponse,
+		ServerMultiCloseConAfter:     1000 * time.Millisecond,
 		ServerIdleTimeout:            5 * time.Second,
-		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      2 * time.Second,
 		ServerSuccessResponseOnFirst: false,
 		ServerSleepBeforeResponse:    0,
 		ServerSleepOnSecond:          false,
+		ClientRequestMethod:          http.MethodGet,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      2 * time.Second,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
-		ServerType:                   ServerTypeMultiResponse,
-		ServerMultiCloseConAfter:     1000 * time.Millisecond,
 	},
 	{
 		ID:                           "09",
 		Description:                  "Multiple requests in parallel - multiple TCP connections",
-		ClientRequestMethod:          http.MethodGet,
+		ServerType:                   ServerTypeHTTP,
 		ServerIdleTimeout:            5 * time.Second,
-		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      0,
-		ReqInParallel:                true,
 		ServerSuccessResponseOnFirst: false,
 		ServerSleepBeforeResponse:    10 * time.Millisecond,
 		ServerSleepOnSecond:          false,
+		ClientRequestMethod:          http.MethodGet,
+		ClientIdleTimeout:            90 * time.Second,
+		ClientWaitBeforeNextReq:      0,
+		ReqInParallel:                true,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
-		ServerType:                   ServerTypeHTTP,
 	},
 	{
 		ID:                           "10",
 		Description:                  "Multiple requests in parallel with client config MaxConnsPerHost=1 - one TCP connection is used",
-		ClientRequestMethod:          http.MethodGet,
+		ServerType:                   ServerTypeHTTP,
+		ServerSuccessResponseOnFirst: false,
+		ServerSleepBeforeResponse:    10 * time.Millisecond,
+		ServerSleepOnSecond:          false,
 		ServerIdleTimeout:            5 * time.Second,
+		ClientRequestMethod:          http.MethodGet,
 		ClientIdleTimeout:            90 * time.Second,
 		ClientMaxConnsPerHost:        1,
 		ClientWaitBeforeNextReq:      0,
 		ReqInParallel:                true,
-		ServerSuccessResponseOnFirst: false,
-		ServerSleepBeforeResponse:    10 * time.Millisecond,
-		ServerSleepOnSecond:          false,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
-		ServerType:                   ServerTypeHTTP,
+	},
+	{
+		ID:                      "20",
+		Description:             "HTTP2, Server HTTP 200 OK response - connection reused from idle pool",
+		UseHTTP2:                true,
+		UseTLS:                  true,
+		ServerType:              ServerTypeHTTP,
+		ServerIdleTimeout:       5 * time.Second,
+		ClientRequestMethod:     http.MethodGet,
+		ClientIdleTimeout:       90 * time.Second,
+		ClientWaitBeforeNextReq: 1 * time.Second,
+		ReqInParallel:           false,
+		ClientTimeout:           10 * time.Second,
+		ReqCount:                3,
 	},
 }
 
@@ -259,7 +278,7 @@ func parseArguments() (string, *Config, error) {
 	cfg := &Config{}
 
 	flag.StringVar(&simulationID, "sim", "01", "Simulation scenario ID")
-	flag.BoolVar(&cfg.UseHTTPS, "https", false, "Enable HTTPS")
+	flag.BoolVar(&cfg.UseTLS, "https", false, "Enable HTTPS")
 	flag.StringVar(&method, "method", "GET", "Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	flag.Usage = displayHelp
 	flag.Parse()
@@ -297,17 +316,20 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 		displayHelp()
 		os.Exit(1)
 	}
-	if cfg.ServerType != ServerTypeHTTP && argsCfg.UseHTTPS {
+	if cfg.ServerType != ServerTypeHTTP && argsCfg.UseTLS {
 		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", simulationID)
 		os.Exit(1)
 	}
 	if argsCfg.ClientRequestMethod != "" {
 		cfg.ClientRequestMethod = argsCfg.ClientRequestMethod
 	}
-	cfg.UseHTTPS = argsCfg.UseHTTPS
+	cfg.UseTLS = argsCfg.UseTLS
+	if cfg.UseHTTP2 {
+		cfg.UseTLS = true // http2 forces https
+	}
 
 	// Set URLs based on HTTPS mode
-	if cfg.UseHTTPS {
+	if cfg.UseTLS {
 		cfg.ServerAddress = srvIP + ":" + portTLS
 		cfg.ClientRequestURL = "https://" + cfg.ServerAddress
 	} else {
@@ -403,7 +425,7 @@ func startHTTPServer(cfg *Config) {
 	fmt.Println("Starting server on " + cfg.ServerAddress)
 
 	var err error
-	if cfg.UseHTTPS {
+	if cfg.UseTLS {
 		err = server.ListenAndServeTLS("server.crt", "server.key")
 	} else {
 		err = server.ListenAndServe()
@@ -582,6 +604,13 @@ func sendRST(conn net.Conn, cfg *Config) {
 }
 
 func startClient(cfg *Config) {
+	keyLogFile := getKeyLogWriter(cfg)
+	if keyLogFile != nil {
+		if file, ok := keyLogFile.(*os.File); ok {
+			defer file.Close()
+		}
+	}
+
 	// Create custom transport with idle timeout settings
 	transport := &http.Transport{
 		IdleConnTimeout: cfg.ClientIdleTimeout,
@@ -592,7 +621,9 @@ func startClient(cfg *Config) {
 		}).DialContext,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // Allows self-signed certificates
+			KeyLogWriter:       keyLogFile,
 		},
+		ForceAttemptHTTP2: cfg.UseHTTP2,
 	}
 
 	// Create an HTTP client with the custom transport
@@ -622,6 +653,27 @@ func startClient(cfg *Config) {
 		fmt.Println("client: waiting for all requests to finish")
 	}
 	wg.Wait()
+}
+
+// create key log writer only if HTTPS was enabled and SSLKEYLOGFILE env variable is defined
+func getKeyLogWriter(cfg *Config) io.Writer {
+	if !cfg.UseTLS {
+		return nil
+	}
+	keyLogFilePath := os.Getenv("SSLKEYLOGFILE")
+	if keyLogFilePath == "" {
+		fmt.Println("client: SSLKEYLOGFILE env variable is not defined, skipping SSLKEYLOGFILE logging, see README.md for more info.")
+		return nil
+	}
+
+	file, err := os.OpenFile(keyLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Printf("Error: Failed to open SSLKEYLOGFILE (%s): %v", keyLogFilePath, err)
+		return nil
+	}
+	fmt.Println("client: SSLKEYLOGFILE env variable is defined, logging SSL key exchange to '" + keyLogFilePath + "'")
+
+	return file
 }
 
 func wait(sec int) {
