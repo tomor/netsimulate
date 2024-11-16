@@ -1,7 +1,7 @@
 # Go HTTP client behaviour simulator
 
 This tool simulates various network communication scenarios between a Go-based HTTP client and server.
-It allows developers and network engineers to test and analyze different behaviors in client-server interactions,
+It allows to test and analyze different behaviors in client-server interactions,
 such as connection handling, timeouts, and response delays.
 
 # How to use
@@ -12,9 +12,8 @@ such as connection handling, timeouts, and response delays.
 
 Run `go run . -h` for list of existing simulations.
 
-Simulations which use HTTP server can be started also with TLS (`-https` option). Help (`-h`) shows which are those.
-Spoiler: There is no difference in how the tcp connections are reused when TLS is used. The only difference 
-which visible in `tcpdump` and `wirshark` is the TLS handshake and the encrypted communication.
+Simulations which use HTTP server can be started also with TLS (`-tls` flag). Help (`-h`) shows which are those.
+Spoiler: There is no difference in how the tcp connections are reused when TLS is used. 
  
 ### tcpdump
 ```shell
@@ -95,7 +94,7 @@ Simulation stopped.
       - We can verify that there is one TCP handshake (SYN, SYN, ACK) for 3 HTTP requests.
       ![Wireshark - simulation 01 - one tcp connection](./docs/img/01-one_tcp_con.png)
     - Simulation 20
-      - Here we have decrypted TLS traffic with HTTP2
+      - Decrypted TLS traffic with HTTP2
         ![Wireshark - simulation 20 - one tcp connection](./docs/img/20-http2-one_tcp_con.png)
 
 2. Each HTTP request uses own TCP connection
