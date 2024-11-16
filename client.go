@@ -83,18 +83,17 @@ func getKeyLogWriter(cfg *Config) io.Writer {
 	if !cfg.UseTLS {
 		return nil
 	}
-	keyLogFilePath := os.Getenv("SSLKEYLOGFILE")
-	if keyLogFilePath == "" {
-		fmt.Println("client: SSLKEYLOGFILE env variable is not defined, skipping SSLKEYLOGFILE logging, see README.md for more info.")
+
+	if cfg.KeyLogFilePath == "" {
 		return nil
 	}
 
-	file, err := os.OpenFile(keyLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(cfg.KeyLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		fmt.Printf("Error: Failed to open SSLKEYLOGFILE (%s): %v", keyLogFilePath, err)
+		fmt.Printf("Error: Failed to open keylog file (%s): %v", cfg.KeyLogFilePath, err)
 		return nil
 	}
-	fmt.Println("client: SSLKEYLOGFILE env variable is defined, logging SSL key exchange to '" + keyLogFilePath + "'")
+	fmt.Println("client: logging SSL key exchange to '" + cfg.KeyLogFilePath + "'")
 
 	return file
 }

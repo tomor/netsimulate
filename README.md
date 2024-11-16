@@ -26,21 +26,10 @@ Display filter: `tcp.port in {8443, 8080}`
 
 
 #### Decrypting TLS traffic in Wireshark
-To decrypt TLS traffic and analyze it in Wireshark, follow these steps:
 
-1. **Set the `SSLKEYLOGFILE` Environment Variable**  
-   Define the `SSLKEYLOGFILE` environment variable with the file path where the client TLS secrets will be written. For example:
-
-   ```bash
-   export SSLKEYLOGFILE=/path/to/tls-secrets.log
-   
-2. **Configure Wireshark**  
-    Open Wireshark and go to Wireshark/Edit → Preferences → Protocols → TLS.
-    Set the (Pre)-Master-Secret log filename to the file path used for SSLKEYLOGFILE.
-
-3. **Capture and Analyze**  
-    Start capturing traffic in Wireshark.
-    Enjoy decrypted TLS traffic.
+1. Provide the `keylog` program argument, e.g. `go run . -sim 01 -tls -keylog /path/to/tls.log`
+2. Open Wireshark and go to Wireshark/Edit → Preferences → Protocols → TLS. 
+  Set the (Pre)-Master-Secret log filename to the same path.
 
 ## Example output
 
@@ -53,14 +42,14 @@ Configuration:
   Use HTTP2:                    false
   Use TLS:                      false
   Server Idle Timeout:          5 sec
-  Server Success On First:      0 sec
-  Server Sleep Before Response: 0 sec
+  Server Success On First:      false
+  Server Sleep Before Response: 0.0 sec
   Server Sleep On Second:       false
-  Server Sleep On Second Dur:   0 sec
+  Server Sleep On Second Dur:   0.0 sec
   Client Request Type:          GET
   Client Idle Timeout:          90 sec
   Client MaxConnsPerHost:       0 (unlimited)
-  Client Wait Before Next Req:  1 sec
+  Client Wait Before Next Req:  1.0 sec
   Client Timeout:               10 sec
   Request Count:                3
   Requests In Parallel:         false
@@ -79,7 +68,7 @@ client: waiting 1 sec before sending the next request.
 
 client: Sending 2. GET request...
 client trace: Trying to get a connection for 127.0.0.1:8080
-client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.001354666s
+client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.000948625s
 server: handling request GET num 2
 client trace: Connection returned to idle pool
 client: Response from 2. request: status: 200 OK, body: GET request handled with query number: 2
@@ -87,7 +76,7 @@ client: waiting 1 sec before sending the next request.
 
 client: Sending 3. GET request...
 client trace: Trying to get a connection for 127.0.0.1:8080
-client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.00146625s
+client trace: Got a connection: reused=true, wasIdle=true, idleTime=1.001263709s
 server: handling request GET num 3
 client trace: Connection returned to idle pool
 client: Response from 3. request: status: 200 OK, body: GET request handled with query number: 3

@@ -10,28 +10,25 @@ import (
 	"time"
 )
 
-// parseArguments handles command-line argument parsing and validation.
-func parseArguments() (string, *Config, error) {
-	var simulationID string
-	var method string
+func parseArguments() (*Config, error) {
 	cfg := &Config{}
 
-	// TODO make sim positional argument (mandatory)
-	flag.StringVar(&simulationID, "sim", "", "")
-	flag.BoolVar(&cfg.UseTLS, "tls", false, "")
-	flag.StringVar(&cfg.ClientRequestMethod, "method", "GET", "")
+	flag.StringVar(&cfg.ID, "sim", "", "Simulation scenario ID (e.g., '01')") // TODO make sim positional argument (mandatory)
+	flag.BoolVar(&cfg.UseTLS, "tls", false, "Use TLS for the selected scenario (not supported by all simulations)")
+	flag.StringVar(&cfg.KeyLogFilePath, "keylog", "", "File path where the client TLS session keys will be written")
+	flag.StringVar(&cfg.ClientRequestMethod, "method", "GET", "Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	flag.Usage = displayHelp
 	flag.Parse()
 
-	if simulationID == "" {
-		return "", nil, fmt.Errorf("simulationID cannot be empty")
+	if cfg.ID == "" {
+		return nil, fmt.Errorf("simulationID cannot be empty")
 	}
 
-	if !isValidMethod(method) {
-		return "", nil, fmt.Errorf("invalid method: %s. Allowed methods are GET, POST, DELETE, HEAD", method)
+	if !isValidMethod(cfg.ClientRequestMethod) {
+		return nil, fmt.Errorf("invalid method: %s. Allowed methods are GET, POST, DELETE, HEAD", cfg.ClientRequestMethod)
 	}
 
-	return simulationID, cfg, nil
+	return cfg, nil
 }
 
 // isValidMethod checks if the provided method is one of the allowed HTTP methods.
@@ -47,15 +44,15 @@ func isValidMethod(method string) bool {
 }
 
 // loadConfiguration loads the appropriate configuration based on the parsed arguments.
-func loadConfiguration(simulationID string, argsCfg *Config) *Config {
-	cfg, exists := simulations.get(simulationID)
+func loadConfiguration(argsCfg *Config) *Config {
+	cfg, exists := simulations.get(argsCfg.ID)
 	if !exists {
-		fmt.Printf("Invalid simulation ID: %s\n\n", simulationID)
+		fmt.Printf("Invalid simulation ID: %s\n\n", argsCfg.ID)
 		displaySimulationsList()
 		os.Exit(1)
 	}
 	if cfg.ServerType != ServerTypeHTTP && argsCfg.UseTLS {
-		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", simulationID)
+		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", argsCfg.ID)
 		os.Exit(1)
 	}
 	if argsCfg.ClientRequestMethod != "" {
@@ -65,6 +62,7 @@ func loadConfiguration(simulationID string, argsCfg *Config) *Config {
 	if cfg.UseHTTP2 {
 		cfg.UseTLS = true // http2 forces https
 	}
+	cfg.KeyLogFilePath = argsCfg.KeyLogFilePath
 
 	// Set URLs based on HTTPS mode
 	if cfg.UseTLS {
@@ -91,6 +89,7 @@ func displayHelp() {
 	fmt.Println("\nOptions:")
 	fmt.Println("  -sim        (mandatory) Simulation scenario ID (e.g., '01')")
 	fmt.Println("  -tls        (optional)  Ad hoc change to HTTPS for the selected simulation (not supported by all simulations)")
+	fmt.Println("  -keylog     (optional)  File path where the client TLS session keys will be written")
 	fmt.Println("  -method     (optional)  Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	fmt.Println("  -h          Show help and exit")
 	fmt.Println()
@@ -98,15 +97,15 @@ func displayHelp() {
 	displaySimulationsList()
 
 	fmt.Println("\nExample:")
-	fmt.Println("  go run main.go -sim 01")
+	fmt.Println("  go run . -sim 01")
 	fmt.Println("")
 }
 
 func httpsInfo(cfg *Config) string {
 	if cfg.ServerType == ServerTypeHTTP {
-		return "(can HTTPS)"
+		return "(can TLS)"
 	}
-	return "(no HTTPS)"
+	return "(no TLS)"
 }
 
 // runSimulation sets up and executes the simulation by starting the server and client.
@@ -147,13 +146,13 @@ func runSimulation(cfg *Config) {
 }
 
 func main() {
-	simulationID, cfg, err := parseArguments()
+	args, err := parseArguments()
 	if err != nil {
 		displayHelp()
 		fmt.Fprintf(os.Stderr, "\nError: %v\n", err)
 		return
 	}
-	cfg = loadConfiguration(simulationID, cfg)
+	cfg := loadConfiguration(args)
 	cfg.print()
 	runSimulation(cfg)
 }

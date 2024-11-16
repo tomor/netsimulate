@@ -6,10 +6,12 @@ import (
 	"time"
 )
 
-// Config defines simulation behaviour
+// Config defines simulation behaviour.
+// It's also used for program arguments.
 type Config struct {
-	ID          string // Simulation identifier
-	Description string // Description of the scenario
+	ID             string // Simulation identifier
+	Description    string // Description of the scenario
+	KeyLogFilePath string // program argument with path where to store TLS session keys
 
 	ServerAddress string
 	UseHTTP2      bool // Supported only by ServerTypeHTTP, enables HTTPS
@@ -42,16 +44,16 @@ func (c Config) print() {
 	fmt.Printf("  Server Address:               %s\n", c.ServerAddress)
 	fmt.Printf("  Use HTTP2:                    %v\n", c.UseHTTP2)
 	fmt.Printf("  Use TLS:                      %t\n", c.UseTLS)
-	fmt.Printf("  Server Idle Timeout:          %d sec\n", int(c.ServerIdleTimeout.Seconds()))
-	fmt.Printf("  Server Success On First:      %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
-	fmt.Printf("  Server Sleep Before Response: %d sec\n", int(c.ServerSleepBeforeResponse.Seconds()))
+	fmt.Printf("  Server Idle Timeout:          %.0f sec\n", c.ServerIdleTimeout.Seconds())
+	fmt.Printf("  Server Success On First:      %v\n", c.ServerSuccessResponseOnFirst)
+	fmt.Printf("  Server Sleep Before Response: %.1f sec\n", c.ServerSleepBeforeResponse.Seconds())
 	fmt.Printf("  Server Sleep On Second:       %t\n", c.ServerSleepOnSecond)
-	fmt.Printf("  Server Sleep On Second Dur:   %d sec\n", int(c.ServerSleepOnSecondDuration.Seconds()))
+	fmt.Printf("  Server Sleep On Second Dur:   %.1f sec\n", c.ServerSleepOnSecondDuration.Seconds())
 	fmt.Printf("  Client Request Type:          %s\n", c.ClientRequestMethod)
-	fmt.Printf("  Client Idle Timeout:          %d sec\n", int(c.ClientIdleTimeout.Seconds()))
+	fmt.Printf("  Client Idle Timeout:          %.0f sec\n", c.ClientIdleTimeout.Seconds())
 	fmt.Printf("  Client MaxConnsPerHost:       %d %s\n", c.ClientMaxConnsPerHost, infoMaxConns(c.ClientMaxConnsPerHost))
-	fmt.Printf("  Client Wait Before Next Req:  %d sec\n", int(c.ClientWaitBeforeNextReq.Seconds()))
-	fmt.Printf("  Client Timeout:               %d sec\n", int(c.ClientTimeout.Seconds()))
+	fmt.Printf("  Client Wait Before Next Req:  %.1f sec\n", c.ClientWaitBeforeNextReq.Seconds())
+	fmt.Printf("  Client Timeout:               %.0f sec\n", c.ClientTimeout.Seconds())
 	fmt.Printf("  Request Count:                %d\n", c.ReqCount)
 	fmt.Printf("  Requests In Parallel:         %v\n", c.ReqInParallel)
 	fmt.Println()
@@ -83,7 +85,7 @@ var simulations = Simulations{
 		ServerSleepOnSecond:       false,
 		ClientRequestMethod:       http.MethodGet,
 		ClientIdleTimeout:         90 * time.Second,
-		ClientWaitBeforeNextReq:   2 * time.Second,
+		ClientWaitBeforeNextReq:   1100 * time.Millisecond,
 		ClientTimeout:             10 * time.Second,
 		ReqCount:                  3,
 	},
