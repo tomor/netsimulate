@@ -85,6 +85,7 @@ func getKeyLogWriter(cfg *Config) io.Writer {
 	}
 
 	if cfg.KeyLogFilePath == "" {
+		fmt.Println("client: TLS enabled, but -keylog not specified. TLS key exchange will not be logged.")
 		return nil
 	}
 
