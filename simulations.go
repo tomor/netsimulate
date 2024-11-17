@@ -17,13 +17,17 @@ type Config struct {
 	UseHTTP2      bool // Supported only by ServerTypeHTTP, enables HTTPS
 	UseTLS        bool // Enable HTTPS
 
-	ServerType                   ServerType    // Type of server simulation (e.g., RST, Abrupt close)
-	ServerIdleTimeout            time.Duration // Server idle timeout
-	ServerSuccessResponseOnFirst bool          // If the server responds with HTTP 200 OK for the first request (bad server only)
-	ServerSleepBeforeResponse    time.Duration // Server sleep duration to simulate delay
-	ServerSleepOnSecond          bool          // Simulate sleep only on second request, for: ServerTypeHTTP
-	ServerSleepOnSecondDuration  time.Duration // Duration of sleep on second request
-	ServerMultiCloseConAfter     time.Duration // Duration after which the connection is closed after the first response for ServerTypeMultiResponse
+	ServerType        ServerType    // Type of server simulation (e.g., RST, Abrupt close)
+	ServerIdleTimeout time.Duration // Server idle timeout
+
+	// ServerTypeHTTP
+	ServerSleepBeforeResponse   time.Duration // Server sleep duration to simulate delay
+	ServerSleepOnSecond         bool          // Simulate sleep only on second request
+	ServerSleepOnSecondDuration time.Duration // Duration of sleep on second request
+	// ServerTypeRST, ServerTypeMultiResponse
+	ServerSuccessResponseOnFirst bool // If the server responds with HTTP 200 OK for the first request
+	// ServerTypeMultiResponse
+	ServerMultiCloseConAfter time.Duration // Duration after which the connection is closed after the first response for ServerTypeMultiResponse
 
 	ClientRequestMethod     string        // HTTP request type (GET, POST, etc.)
 	ClientRequestURL        string        // URL to which the client sends the HTTP request
