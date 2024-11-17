@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -9,35 +9,23 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/tomor/netsimulate/config"
 )
 
-const (
-	srvIP   = "127.0.0.1"
-	port    = "8080"
-	portTLS = "8443"
-)
-
-type ServerType int
-
-const (
-	ServerTypeHTTP          ServerType = iota
-	ServerTypeRST                      // server type: TCP
-	ServerTypeMultiResponse            // server type: TCP - server doesn't close the connection after the first response
-)
-
-func newHandler(cfg *Config) http.HandlerFunc {
+func newHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryNum := r.FormValue("req")
 		fmt.Printf("server: handling request %s num %s\n", r.Method, queryNum)
 
 		// Handle server sleep based on the request number
 		if cfg.ServerSleepOnSecond && queryNum == "2" {
-			fmt.Printf("server: sleeping %d millis\n", cfg.ServerSleepOnSecondDuration.Milliseconds())
+			fmt.Printf("server: sleeping %.f sec\n", cfg.ServerSleepOnSecondDuration.Seconds())
 			time.Sleep(cfg.ServerSleepOnSecondDuration)
 		}
 
 		if cfg.ServerSleepBeforeResponse != 0 {
-			fmt.Printf("server: sleeping %d sec\n", int(cfg.ServerSleepBeforeResponse.Seconds()))
+			fmt.Printf("server: sleeping %.1f sec\n", cfg.ServerSleepBeforeResponse.Seconds())
 			time.Sleep(cfg.ServerSleepBeforeResponse)
 		}
 
@@ -61,7 +49,7 @@ func newHandler(cfg *Config) http.HandlerFunc {
 	}
 }
 
-func startHTTPServer(cfg *Config) {
+func startHTTPServer(cfg *config.Config) {
 	http.HandleFunc("/", newHandler(cfg)) // Endpoint to handle requests
 
 	// Start the server and listen on port 8080
@@ -87,7 +75,7 @@ func startHTTPServer(cfg *Config) {
 
 var connectionCount int32
 
-func handleConnection(conn net.Conn, cfg *Config) {
+func handleConnection(conn net.Conn, cfg *config.Config) {
 	// Increment connection counter atomically
 	currentConnection := atomic.AddInt32(&connectionCount, 1)
 
@@ -99,10 +87,10 @@ func handleConnection(conn net.Conn, cfg *Config) {
 	}
 
 	switch cfg.ServerType {
-	case ServerTypeMultiResponse:
+	case config.ServerTypeMultiResponse:
 		sendMulti(conn, cfg)
 		return
-	case ServerTypeRST:
+	case config.ServerTypeRST:
 		sendRST(conn, cfg)
 		return
 	default:
@@ -110,7 +98,7 @@ func handleConnection(conn net.Conn, cfg *Config) {
 	}
 }
 
-func sendHTTPResponse(conn net.Conn, cfg *Config) {
+func sendHTTPResponse(conn net.Conn, cfg *config.Config) {
 	defer conn.Close()
 
 	if cfg.ServerSleepBeforeResponse != 0 {
@@ -140,7 +128,7 @@ func sendHTTPResponse(conn net.Conn, cfg *Config) {
 
 // Send one answer, then wait and then close the connection
 // the idea is that the client sends another HTTP request over this connection and then receives RST
-func sendMulti(conn net.Conn, cfg *Config) {
+func sendMulti(conn net.Conn, cfg *config.Config) {
 	defer conn.Close()
 
 	// Cheating here: not waiting for HTTP request, just assuming it comes and sending HTTP response after 100ms
@@ -164,7 +152,7 @@ func sendMulti(conn net.Conn, cfg *Config) {
 	fmt.Printf("server: closing connection\n")
 }
 
-func sendRST(conn net.Conn, cfg *Config) {
+func sendRST(conn net.Conn, cfg *config.Config) {
 	defer conn.Close()
 
 	// Get raw file descriptor from the connection
@@ -198,7 +186,7 @@ func sendRST(conn net.Conn, cfg *Config) {
 	fmt.Println("server: Abruptly closed connection with RST to", conn.RemoteAddr())
 }
 
-func startTPCServer(cfg *Config) {
+func startTPCServer(cfg *config.Config) {
 	listener, err := net.Listen("tcp", cfg.ServerAddress)
 	if err != nil {
 		fmt.Println("Error starting bad server:", err)
@@ -217,8 +205,8 @@ func startTPCServer(cfg *Config) {
 	}
 }
 
-func startServer(cfg *Config) {
-	if cfg.ServerType == ServerTypeHTTP {
+func Start(cfg *config.Config) {
+	if cfg.ServerType == config.ServerTypeHTTP {
 		startHTTPServer(cfg)
 	} else {
 		startTPCServer(cfg)

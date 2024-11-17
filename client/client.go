@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"crypto/tls"
@@ -10,6 +10,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/tomor/netsimulate/config"
 )
 
 func wait(sec int) {
@@ -25,7 +27,7 @@ func wait(sec int) {
 	fmt.Println()
 }
 
-func sendRequest(client *http.Client, num int, cfg Config) {
+func sendRequest(client *http.Client, num int, cfg *config.Config) {
 	fmt.Printf("\nclient: Sending %d. %s request...\n", num, cfg.ClientRequestMethod)
 	var err error
 
@@ -54,8 +56,8 @@ func getTrace() *httptrace.ClientTrace {
 			fmt.Printf("client trace: Trying to get a connection for %s\n", hostPort)
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
-			fmt.Printf("client trace: Got a connection: reused=%v, wasIdle=%v, idleTime=%v\n",
-				info.Reused, info.WasIdle, info.IdleTime)
+			fmt.Printf("client trace: Got a connection: reused=%v, wasIdle=%v, idleTime=%.1f sec\n",
+				info.Reused, info.WasIdle, info.IdleTime.Seconds())
 		},
 		PutIdleConn: func(err error) {
 			if err != nil {
@@ -79,7 +81,7 @@ func getTrace() *httptrace.ClientTrace {
 }
 
 // create key log writer only if HTTPS was enabled and SSLKEYLOGFILE env variable is defined
-func getKeyLogWriter(cfg *Config) io.Writer {
+func getKeyLogWriter(cfg *config.Config) io.Writer {
 	if !cfg.UseTLS {
 		return nil
 	}
@@ -99,7 +101,7 @@ func getKeyLogWriter(cfg *Config) io.Writer {
 	return file
 }
 
-func startClient(cfg *Config) {
+func Start(cfg *config.Config) {
 	keyLogFile := getKeyLogWriter(cfg)
 	if keyLogFile != nil {
 		if file, ok := keyLogFile.(*os.File); ok {
@@ -134,11 +136,11 @@ func startClient(cfg *Config) {
 	for i := 1; i <= cfg.ReqCount; i++ {
 		if cfg.ReqInParallel {
 			go func() {
-				sendRequest(client, i, *cfg)
+				sendRequest(client, i, cfg)
 				wg.Done()
 			}()
 		} else {
-			sendRequest(client, i, *cfg)
+			sendRequest(client, i, cfg)
 			wg.Done()
 		}
 		if i < cfg.ReqCount {

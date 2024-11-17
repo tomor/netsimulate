@@ -8,15 +8,25 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/tomor/netsimulate/client"
+	"github.com/tomor/netsimulate/config"
+	"github.com/tomor/netsimulate/server"
 )
 
-func parseArguments() (*Config, error) {
-	cfg := &Config{}
+const (
+	srvIP   = "127.0.0.1"
+	port    = "8080"
+	portTLS = "8443"
+)
+
+func parseArguments() (*config.Config, error) {
+	cfg := &config.Config{}
 
 	flag.StringVar(&cfg.ID, "sim", "", "Simulation scenario ID (e.g., '01')") // TODO make sim positional argument (mandatory)
 	flag.BoolVar(&cfg.UseTLS, "tls", false, "Use TLS for the selected scenario (not supported by all simulations)")
 	flag.StringVar(&cfg.KeyLogFilePath, "keylog", "", "File path where the client TLS session keys will be written")
-	flag.StringVar(&cfg.ClientRequestMethod, "method", "GET", "Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
+	flag.StringVar(&cfg.ClientRequestMethod, "method", "", "Ad hoc change of HTTP request method (GET, POST, DELETE, HEAD)")
 	flag.Usage = displayHelp
 	flag.Parse()
 
@@ -44,14 +54,14 @@ func isValidMethod(method string) bool {
 }
 
 // loadConfiguration loads the appropriate configuration based on the parsed arguments.
-func loadConfiguration(argsCfg *Config) *Config {
-	cfg, exists := simulations.get(argsCfg.ID)
+func loadConfiguration(argsCfg *config.Config) *config.Config {
+	cfg, exists := config.Simulations.Get(argsCfg.ID)
 	if !exists {
 		fmt.Printf("Invalid simulation ID: %s\n\n", argsCfg.ID)
 		displaySimulationsList()
 		os.Exit(1)
 	}
-	if cfg.ServerType != ServerTypeHTTP && argsCfg.UseTLS {
+	if cfg.ServerType != config.ServerTypeHTTP && argsCfg.UseTLS {
 		fmt.Printf("HTTPS is not supported by the selected scenario: %s\n\n", argsCfg.ID)
 		os.Exit(1)
 	}
@@ -78,7 +88,7 @@ func loadConfiguration(argsCfg *Config) *Config {
 
 func displaySimulationsList() {
 	fmt.Println("Available Simulations:")
-	for _, cfg := range simulations {
+	for _, cfg := range config.Simulations {
 		fmt.Printf("  %s: %s %s\n", cfg.ID, cfg.Description, httpsInfo(&cfg))
 	}
 }
@@ -101,25 +111,25 @@ func displayHelp() {
 	fmt.Println("")
 }
 
-func httpsInfo(cfg *Config) string {
-	if cfg.ServerType == ServerTypeHTTP {
+func httpsInfo(cfg *config.Config) string {
+	if cfg.ServerType == config.ServerTypeHTTP {
 		return "(can TLS)"
 	}
 	return "(no TLS)"
 }
 
 // runSimulation sets up and executes the simulation by starting the server and client.
-func runSimulation(cfg *Config) {
+func runSimulation(cfg *config.Config) {
 	var wg sync.WaitGroup
 
-	go startServer(cfg)
+	go server.Start(cfg)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		// wait a bit for the server to be ready
 		time.Sleep(1 * time.Second)
-		startClient(cfg)
+		client.Start(cfg)
 	}()
 
 	// Create a channel to listen for interrupt signals
@@ -153,6 +163,6 @@ func main() {
 		return
 	}
 	cfg := loadConfiguration(args)
-	cfg.print()
+	cfg.Print()
 	runSimulation(cfg)
 }

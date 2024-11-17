@@ -1,9 +1,17 @@
-package main
+package config
 
 import (
 	"fmt"
 	"net/http"
 	"time"
+)
+
+type ServerType int
+
+const (
+	ServerTypeHTTP          ServerType = iota
+	ServerTypeRST                      // server type: TCP
+	ServerTypeMultiResponse            // server type: TCP - server doesn't close the connection after the first response
 )
 
 // Config defines simulation behaviour.
@@ -39,10 +47,9 @@ type Config struct {
 	ReqCount                int           // Number of requests client will make
 }
 
-// print outputs simulation configuration.
-// It's printed at the beginning to stdout.
-func (c Config) print() {
-	fmt.Println("Configuration:")
+// Print to std out in a format suitable for overview about a simulation.
+func (c Config) Print() {
+	fmt.Println("Simulation configuration:")
 	fmt.Printf("  ID:                           %s\n", c.ID)
 	fmt.Printf("  Description:                  %s\n", c.Description)
 	fmt.Printf("  Server Address:               %s\n", c.ServerAddress)
@@ -63,10 +70,18 @@ func (c Config) print() {
 	fmt.Println()
 }
 
-type Simulations []Config
+type List []Config
 
-// list of available simulations
-var simulations = Simulations{
+func (s List) Get(id string) (c *Config, found bool) {
+	for _, cfg := range s {
+		if cfg.ID == id {
+			return &cfg, true
+		}
+	}
+	return nil, false
+}
+
+var Simulations = List{
 	{
 		ID:                        "01",
 		Description:               "Server HTTP 200 OK response - connection reused from idle pool",
@@ -102,7 +117,7 @@ var simulations = Simulations{
 		ServerSleepOnSecond:       false,
 		ClientRequestMethod:       http.MethodGet,
 		ClientIdleTimeout:         1 * time.Second,
-		ClientWaitBeforeNextReq:   2 * time.Second,
+		ClientWaitBeforeNextReq:   1100 * time.Millisecond,
 		ClientTimeout:             10 * time.Second,
 		ReqCount:                  3,
 	},
@@ -152,20 +167,20 @@ var simulations = Simulations{
 		ID:                           "07",
 		Description:                  "Server HTTP OK response for first request, but RST to a second one - no retry by Round Tripper for POST",
 		ServerType:                   ServerTypeMultiResponse,
-		ServerMultiCloseConAfter:     2100 * time.Millisecond,
+		ServerMultiCloseConAfter:     1100 * time.Millisecond,
 		ServerIdleTimeout:            5 * time.Second,
 		ServerSuccessResponseOnFirst: false,
 		ServerSleepBeforeResponse:    0,
 		ServerSleepOnSecond:          false,
 		ClientRequestMethod:          http.MethodPost,
 		ClientIdleTimeout:            90 * time.Second,
-		ClientWaitBeforeNextReq:      2 * time.Second,
+		ClientWaitBeforeNextReq:      1 * time.Second,
 		ClientTimeout:                10 * time.Second,
 		ReqCount:                     3,
 	},
 	{
 		ID:                           "08",
-		Description:                  "Server HTTP OK response for first request, then closes the conn with RST before the second is closed - client detects closed connection when trying to use it and opens a new one",
+		Description:                  "Server HTTP OK response for first request, then close the conn with RST before the second is sent - client opens a new conn",
 		ServerType:                   ServerTypeMultiResponse,
 		ServerMultiCloseConAfter:     1000 * time.Millisecond,
 		ServerIdleTimeout:            5 * time.Second,
@@ -184,7 +199,7 @@ var simulations = Simulations{
 		ServerType:                   ServerTypeHTTP,
 		ServerIdleTimeout:            5 * time.Second,
 		ServerSuccessResponseOnFirst: false,
-		ServerSleepBeforeResponse:    10 * time.Millisecond,
+		ServerSleepBeforeResponse:    100 * time.Millisecond,
 		ServerSleepOnSecond:          false,
 		ClientRequestMethod:          http.MethodGet,
 		ClientIdleTimeout:            90 * time.Second,
@@ -198,7 +213,7 @@ var simulations = Simulations{
 		Description:                  "Multiple requests in parallel with client config MaxConnsPerHost=1 - one TCP connection is used",
 		ServerType:                   ServerTypeHTTP,
 		ServerSuccessResponseOnFirst: false,
-		ServerSleepBeforeResponse:    10 * time.Millisecond,
+		ServerSleepBeforeResponse:    100 * time.Millisecond,
 		ServerSleepOnSecond:          false,
 		ServerIdleTimeout:            5 * time.Second,
 		ClientRequestMethod:          http.MethodGet,
@@ -223,15 +238,6 @@ var simulations = Simulations{
 		ClientTimeout:           10 * time.Second,
 		ReqCount:                3,
 	},
-}
-
-func (s Simulations) get(id string) (c *Config, found bool) {
-	for _, cfg := range s {
-		if cfg.ID == id {
-			return &cfg, true
-		}
-	}
-	return nil, false
 }
 
 func infoMaxConns(num int) string {
