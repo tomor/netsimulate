@@ -140,3 +140,10 @@ Simulation stopped.
     - Simulation 10
       ![Wireshark - simulation 10 - requests in parallel serialized](./docs/img/10-requests-in-parallel-not-really.png)
 
+8. HTTP2 behaviour - multiple HTTP request multiplexed over 1 TCP connection
+     - When a client does 3 HTTP2 requests in parallel, they are multiplexed over 1 TCP connection even if the client is allowed to open multiple TCP connections.
+     - Simulation 21
+       ![Wireshark - simulation 21 - requests in parallel HTTP2](./docs/img/21-http2-one-tcp-multiple-http-parallel.png)
+
+## Ideas
+- HTTP2 broken connection is kept in the idle pool - check online resources and simulate

@@ -20,19 +20,19 @@ func newHandler(cfg *config.Config) http.HandlerFunc {
 
 		// Handle server sleep based on the request number
 		if cfg.ServerSleepOnSecond && queryNum == "2" {
-			fmt.Printf("server: sleeping %.f sec\n", cfg.ServerSleepOnSecondDuration.Seconds())
+			fmt.Printf("server: sleeping %d ms, req %s\n", cfg.ServerSleepOnSecondDuration.Milliseconds(), queryNum)
 			time.Sleep(cfg.ServerSleepOnSecondDuration)
 		}
 
 		if cfg.ServerSleepBeforeResponse != 0 {
-			fmt.Printf("server: sleeping %.1f sec\n", cfg.ServerSleepBeforeResponse.Seconds())
+			fmt.Printf("server: sleeping %d ms, req %s\n", cfg.ServerSleepBeforeResponse.Milliseconds(), queryNum)
 			time.Sleep(cfg.ServerSleepBeforeResponse)
 		}
 
 		// Handle different request methods
 		switch r.Method {
 		case http.MethodGet:
-			fmt.Fprintf(w, "GET request handled with query number: %s", queryNum)
+			fmt.Fprintf(w, "GET request  handled with query number: %s", queryNum)
 
 		case http.MethodPost:
 			body, err := io.ReadAll(r.Body)
@@ -46,6 +46,7 @@ func newHandler(cfg *config.Config) http.HandlerFunc {
 		default:
 			http.Error(w, "Unsupported request method", http.StatusMethodNotAllowed)
 		}
+		fmt.Printf("server: responded to request %s num %s\n", r.Method, queryNum)
 	}
 }
 
@@ -102,7 +103,7 @@ func sendHTTPResponse(conn net.Conn, cfg *config.Config) {
 	defer conn.Close()
 
 	if cfg.ServerSleepBeforeResponse != 0 {
-		fmt.Printf("server: sleeping %d sec\n", int(cfg.ServerSleepBeforeResponse.Seconds()))
+		fmt.Printf("server: sleeping %d ms\n", int(cfg.ServerSleepBeforeResponse.Milliseconds()))
 		time.Sleep(cfg.ServerSleepBeforeResponse)
 	}
 

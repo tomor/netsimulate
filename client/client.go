@@ -14,17 +14,18 @@ import (
 	"github.com/tomor/netsimulate/config"
 )
 
-func wait(sec int) {
-	if sec == 0 {
+func wait(t time.Duration) {
+	if t == 0 {
 		return
 	}
 	// Simulate waiting for the server to close the connection (e.g., server idle timeout < 90s)
-	fmt.Printf("client: waiting %d sec before sending the next request", sec)
-	for i := 0; i < sec; i++ {
-		fmt.Printf(".")
-		time.Sleep(time.Second)
-	}
-	fmt.Println()
+	fmt.Printf("client: waiting %d ms before sending the next request", t.Milliseconds())
+	time.Sleep(t)
+	//for i := 0; i < int(t.Seconds()); i++ {
+	//	fmt.Printf(".")
+	//	time.Sleep(time.Second)
+	//}
+	//fmt.Println()
 }
 
 func sendRequest(client *http.Client, num int, cfg *config.Config) {
@@ -56,8 +57,8 @@ func getTrace() *httptrace.ClientTrace {
 			fmt.Printf("client trace: Trying to get a connection for %s\n", hostPort)
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
-			fmt.Printf("client trace: Got a connection: reused=%v, wasIdle=%v, idleTime=%.1f sec\n",
-				info.Reused, info.WasIdle, info.IdleTime.Seconds())
+			fmt.Printf("client trace: Got a connection: reused=%v, wasIdle=%v, idleTime=%d ms\n",
+				info.Reused, info.WasIdle, info.IdleTime.Milliseconds())
 		},
 		PutIdleConn: func(err error) {
 			if err != nil {
@@ -97,6 +98,7 @@ func getKeyLogWriter(cfg *config.Config) io.Writer {
 		return nil
 	}
 	fmt.Println("client: logging SSL key exchange to '" + cfg.KeyLogFilePath + "'")
+	fmt.Println()
 
 	return file
 }
@@ -144,7 +146,7 @@ func Start(cfg *config.Config) {
 			wg.Done()
 		}
 		if i < cfg.ReqCount {
-			wait(int(cfg.ClientWaitBeforeNextReq.Seconds()))
+			wait(cfg.ClientWaitBeforeNextReq)
 		}
 	}
 	if cfg.ReqInParallel {

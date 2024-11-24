@@ -238,6 +238,22 @@ var Simulations = List{
 		ClientTimeout:           10 * time.Second,
 		ReqCount:                3,
 	},
+	{
+		ID:                        "21",
+		Description:               "HTTP2, Server HTTP 200 OK response - multiple HTTP over 1 TCP connection",
+		UseHTTP2:                  true,
+		UseTLS:                    true,
+		ServerType:                ServerTypeHTTP,
+		ServerIdleTimeout:         5 * time.Second,
+		ServerSleepBeforeResponse: 100 * time.Millisecond,
+		ClientRequestMethod:       http.MethodGet,
+		ClientIdleTimeout:         90 * time.Second,
+		ClientWaitBeforeNextReq:   20 * time.Millisecond, // make sure the TCP is opened
+		ReqInParallel:             true,
+		ClientMaxConnsPerHost:     5,
+		ClientTimeout:             10 * time.Second,
+		ReqCount:                  3,
+	},
 }
 
 func infoMaxConns(num int) string {
