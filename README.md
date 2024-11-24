@@ -7,7 +7,7 @@ such as connection handling, timeouts, and response delays.
 # How to use
 
 1. Start `tcpcump` or `wireshark` to listen on localhost interface. Then filter TCP connections on port 8080 and 8443.
-2. `go run . -sim <number>`
+2. `go run . -sim <simulation-id>`
 3. Observe the output in the console and from `tcpdump` / `wireshark`
 
 Run `go run . -h` for list of existing simulations.
@@ -87,7 +87,7 @@ Simulation stopped.
 
 # Observation
 
-1. Reuse of TCP connection for multiple HTTP requests
+1. Reuse of TCP connection for multiple HTTP/1.1 requests
     - When a HTTP request is done within ConnectionIdleTimeout on both Server and Client, then a TCP connection is
       reused
     - Simulation 01
@@ -97,15 +97,15 @@ Simulation stopped.
       - Decrypted TLS traffic with HTTP2
         ![Wireshark - simulation 20 - one tcp connection](./docs/img/20-http2-one_tcp_con.png)
 
-2. Each HTTP request uses own TCP connection
-    - An opened TCP connection is not reused when HTTP request is not done before IdleConnTimeout on the client or
+2. Each HTTP/1.1 request uses own TCP connection
+    - An opened TCP connection is not reused when HTTP/1.1 request is not done before IdleConnTimeout on the client or
       server side
     - Simulation 02, Simulation 03
       - We can see 3 TCP handshakes (SYN, SYN, ACK) for 3 HTTP connections
       ![Wireshark - simulation 02 - multiple tcp connections](./docs/img/02-three_tcp_cons.png)
       
 3. TCP connection not put to the idle pool on the client
-    - If the HTTP request fails on the TCP level, the TCP connection is not put to the idle pool on the client (timeout,
+    - If the HTTP/1.1 request fails on the TCP level, the TCP connection is not put to the idle pool on the client (timeout,
       RST, ..)
     - Simulation 04, Simulation 05
       ![Wireshark - simulation 04 - client timeout no idle pool](./docs/img/04-client-timeout-no-idle-pool.png)
@@ -125,22 +125,22 @@ Simulation stopped.
     - When a server closes a connection which is in idle pool on the client side, it's detected once the client tries
       to use it
     - The client discards the broken connection and opens a new one (or uses another one form the idle pool)
-    - The HTTP request is sent only once over a "ok" connection
+    - The HTTP/1.1 request is sent only once over a "ok" connection
     - Simulation 08
       ![Wireshark - simulation 08 - closed connection in idle pool](./docs/img/08-closed-conn-detect-on-client.png)
 
-6. Multiple HTTP requests in parallel over separate TCP connections
+6. Multiple HTTP/1.1 requests in parallel over separate TCP connections
     - When a client does 3 HTTP requests in parallel, 3 TCP connections are opened at once.
     - Simulation 09
       ![Wireshark - simulation 09 - requests in parallel](./docs/img/09-requests-in-parallel.png)
      - This simulation also shows that default http.Transport config for http client for MaxIdleConnectionsPerHost is 2 because the third connection is not put to the idle pool. See output: `client trace: Failed to put connection back to idle pool: http: putIdleConn: too many idle connections for host`
      
-7. Multiple HTTP requests in parallel done in series via 1 TCP connection
+7. Multiple HTTP/1.1 requests in parallel done in series via 1 TCP connection
     - When a client does 3 HTTP requests in parallel while the http.Transport config MaxConnsPerHost is set to 1, they will be serialized over 1 TCP connection.
     - Simulation 10
       ![Wireshark - simulation 10 - requests in parallel serialized](./docs/img/10-requests-in-parallel-not-really.png)
 
-8. HTTP2 behaviour - multiple HTTP request multiplexed over 1 TCP connection
+8. HTTP2 behaviour - multiple HTTP/2 request multiplexed over 1 TCP connection
      - When a client does 3 HTTP2 requests in parallel, they are multiplexed over 1 TCP connection even if the client is allowed to open multiple TCP connections.
      - Simulation 21
        ![Wireshark - simulation 21 - requests in parallel HTTP2](./docs/img/21-http2-one-tcp-multiple-http-parallel.png)
